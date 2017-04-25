@@ -21,7 +21,7 @@ CREATE_RDS_INSTANCE = '''
                 "Engine": "SQLServer",
                 "DBInstanceType": "Primary",
                 "MutriORsignle": false,
-                "DBInstanceDescription": "akash_created",
+                "DBInstanceDescription": "demo_created",
                 "ConnectionMode": "Safe",
                 "LockMode": "Unlock",
                 "InsId": 1,
@@ -57,7 +57,7 @@ MODIFY_RDS_INSTANCE = '''
                 "Engine": "SQLServer",
                 "DBInstanceType": "Primary",
                 "MutriORsignle": false,
-                "DBInstanceDescription": "akash_created",
+                "DBInstanceDescription": "demo_created",
                 "ConnectionMode": "Safe",
                 "LockMode": "Unlock",
                 "InsId": 1,
@@ -81,7 +81,14 @@ MODIFY_RDS_INSTANCE = '''
 }
 '''
 
-CHANGING_RDS_INSTANCE_TYPE = '''
+CHANGE_RDS_INSTANCE_TYPE = '''
+{
+     "RequestId": "CDB3C0B3-A51F-4B93-8ACD-AC10C4DE0625"
+    
+}
+'''
+
+CREATE_RDS_READ_ONLY_INSTANCE = '''
 {
      "RequestId": "CDB3C0B3-A51F-4B93-8ACD-AC10C4DE0625"
     
@@ -109,28 +116,28 @@ CREATE_ACCOUNT = '''
 }
 '''
 
-RESETTING_INSTANCE_PASSWORD = '''
+RESET_INSTANCE_PASSWORD = '''
 {
      "RequestId": "11D5681C-7090-435F-BB17-E4E19DA836F5"
     
 }
 '''
 
-RESTARTING_RDS_INSTANCE = '''
+RESTART_RDS_INSTANCE = '''
 {
      "RequestId": "81DDE6C8-C10F-401F-B758-80487483AB62"
     
 }
 '''
 
-RELEASING_RDS_INSTANCE = '''
+RELEASE_RDS_INSTANCE = '''
 {
      "RequestId": "EC72C609-238F-42C8-9CF0-C2BC21D52DD3"
     
 }
 '''
 
-SWITCING_BETWEEN_PRIMARY_AND_STANDBY_DATABASE = '''
+SWITCH_BETWEEN_PRIMARY_AND_STANDBY_DATABASE = '''
 {
      "Items": {
         "DBInstance": [
@@ -138,7 +145,7 @@ SWITCING_BETWEEN_PRIMARY_AND_STANDBY_DATABASE = '''
                 "Engine": "SQLServer",
                 "DBInstanceType": "Primary",
                 "MutriORsignle": true,
-                "DBInstanceDescription": "Rohit_RDS",
+                "DBInstanceDescription": "DEMO_RDS",
                 "ConnectionMode": "Safe",
                 "LockMode": "Unlock",
                 "InsId": 1,
@@ -188,7 +195,7 @@ SWITCING_BETWEEN_PRIMARY_AND_STANDBY_DATABASE = '''
 }
 '''
 
-RESETTING_ACCOUNT = '''
+RESET_ACCOUNT = '''
 {
      "RequestId": "0F630492-7754-405A-B631-9974F54D5728"
     
@@ -202,14 +209,14 @@ DELETE_ACCOUNT = '''
 }
 '''
 
-GRANTING_ACCOUNT_PERMISSION = '''
+GRANT_ACCOUNT_PERMISSIONS = '''
 {
      "RequestId": "4F479108-6C86-4AA0-BB88-9982A697C8DE"
     
 }
 '''
 
-REVOKING_ACCOUNT_PERMISSION = '''
+REVOKE_ACCOUNT_PERMISSIONS = '''
 {
      "RequestId": "7EA5AEA2-869F-44CB-A5C3-401F9C03D81A"
     
@@ -219,8 +226,45 @@ REVOKING_ACCOUNT_PERMISSION = '''
 
 # C2C : Unit Test For Create RDS Instance Method
 class TestCreateRDSInstance(ACSMockServiceTestCase):
+    connection_class = RDSConnection    
+    db_engine = "MySQL"
+    engine_version = "5.6"
+    db_instance_class = "rds.mysql.t1.small" 
+    db_instance_storage = "5"
+    instance_net_type = "Internet"
+    security_ip_list = "192.168.0.0/24"
+    pay_type = "Postpaid"
+    connection_mode = "Safe "
+    instance_network_type = "Classic"
+
+    def default_body(self):
+        return CREATE_RDS_INSTANCE
+                                                                    
+    def test_create_rds_instance(self):
+        self.set_http_response(status_code=200)
+        changed, result = \
+            self.service_connection.create_rds_instance(self.db_engine, self.engine_version, self.db_instance_class,
+                                                        self.db_instance_storage, self.instance_net_type,
+                                                        self.security_ip_list,self. pay_type, period=None,zone=None,
+                                                        instance_network_type=self.instance_network_type,
+                                                        connection_mode=self.connection_mode, vpc_id=None,
+                                                        vswitch_id=None, private_ip_address=None,
+                                                        allocate_public_ip=None, connection_string_prefix=None,
+                                                        public_port=None, db_name=None, db_description=None,
+                                                        character_set_name=None, maint_window=None,
+                                                        preferred_backup_time=None, preferred_backup_period=None,
+                                                        backup_retention_period=None, db_tags=None, wait=None,
+                                                        wait_timeout=None)
+       
+        self.assertEqual(str(result[0][u'DBInstanceId']), "rm-3nsuc8muqq2tgk6wk")
+
+# C2C : Unit Test For Create RDS Read-Only Instance Method
+
+
+class TestCreateReadOnlyRDSInstance(ACSMockServiceTestCase):
     connection_class = RDSConnection
     zone = ""
+    instance_id = "rm-dj14z88396ms4b8v8"
     db_engine = "MySQL"
     engine_version = "5.6"
     db_instance_class = "rds.mysql.t1.small" 
@@ -230,34 +274,27 @@ class TestCreateRDSInstance(ACSMockServiceTestCase):
     pay_type = "Postpaid"
     connection_mode = "Intranet "
     instance_network_type = "Classic"
+    instance_description = "test description"
 
     def default_body(self):
-        return CREATE_RDS_INSTANCE
+        return CREATE_RDS_READ_ONLY_INSTANCE
                                                                     
-    def test_create_rds_instance(self):
+    def test_create_read_only_rds_instance(self):
         self.set_http_response(status_code=200)
-        changed, result = self.service_connection.create_rds_instance(self.zone, self.db_engine, self.engine_version,
-                                                                      self.db_instance_class, self.db_instance_storage,
-                                                                      self.instance_net_type, instance_description=None,
-                                                                      security_ip_list=self.security_ip_list,
-                                                                      pay_type=self.pay_type, period=None,
-                                                                      used_time=None,
-                                                                      instance_network_type=self.instance_network_type,
-                                                                      connection_mode=self.connection_mode,
-                                                                      vpc_id=None, vswitch_id=None,
-                                                                      private_ip_address=None, allocate_public_ip=False,
-                                                                      public_connection_string_prefix=None,
-                                                                      public_port=None, db_name=None,
-                                                                      db_description=None, character_set_name=None,
-                                                                      modifying_db_instance_maint_time=None,
-                                                                      preferred_backup_time=None,
-                                                                      preferred_backup_period=None,
-                                                                      backup_retention_period=None, db_tags=None)
+        changed, result = \
+            self.service_connection.create_rds_read_only_instance(source_instance=self.instance_id, zone=self.zone,
+                                                                  engine_version=self.engine_version,
+                                                                  db_instance_class=self.db_instance_class,
+                                                                  db_instance_storage=self.db_instance_storage,
+                                                                  instance_description=self.instance_description,
+                                                                  pay_type=self.pay_type, instance_network_type=None,
+                                                                  vpc_id=None, vswitch_id=None, private_ip_address=None)
        
-        self.assertEqual(str(result[0][u'DBInstanceId']), "rm-3nsuc8muqq2tgk6wk")       
-
+        self.assertEqual(str(result[0][u'DBInstanceId']), "rm-3nsuc8muqq2tgk6wk")   
 
 # C2C : Unit Test For Modify RDS Instance Method
+
+
 class TestModifyRDSInstance(ACSMockServiceTestCase):
     connection_class = RDSConnection
     zone = ""
@@ -294,8 +331,8 @@ class TestModifyRDSInstance(ACSMockServiceTestCase):
         self.assertEqual(str(result[0][u'RequestId']), 'A9E8BA89-ED5A-4F94-A7D6-935E36CA35B6')       
 
 
-# C2C : Unit Test For Changing RDS Instance Type Method
-class TestChangingRDSInstanceType(ACSMockServiceTestCase):
+# C2C : Unit Test For Change RDS Instance Type Method
+class TestChangeRDSInstanceType(ACSMockServiceTestCase):
     connection_class = RDSConnection
 
     instance_id = "rm-3nst28462da58z43g"
@@ -304,12 +341,12 @@ class TestChangingRDSInstanceType(ACSMockServiceTestCase):
     pay_type = "Postpaid"
 
     def default_body(self):
-        return CHANGING_RDS_INSTANCE_TYPE 
+        return CHANGE_RDS_INSTANCE_TYPE 
                                                                     
-    def test_changing_rds_instance_type(self):
+    def test_change_rds_instance_type(self):
         self.set_http_response(status_code=200)
-        changed, result = self.service_connection.changing_rds_instance_type(self.instance_id, self.db_instance_class,
-                                                                             self.db_instance_storage, self.pay_type)
+        changed, result = self.service_connection.change_rds_instance_type(self.instance_id, self.db_instance_class,
+                                                                           self.db_instance_storage, self.pay_type)
         self.assertEqual(result[u'RequestId'], "CDB3C0B3-A51F-4B93-8ACD-AC10C4DE0625")        
 
 
@@ -352,7 +389,7 @@ class TestDeleteDatabase(ACSMockServiceTestCase):
 class TestCreateAccount(ACSMockServiceTestCase):
     connection_class = RDSConnection   
     db_instance_id = "rm-3ns9392w5ezzo2270"
-    account_name = "rohit1235"
+    account_name = "demo1235"
     account_password = "123456"
     description = "nq"
     account_type = "Normal"
@@ -371,85 +408,86 @@ class TestCreateAccount(ACSMockServiceTestCase):
         self.assertEqual(result[0][u'RequestId'], "A5094804-442F-4755-9FB8-1AB2586D3D23")        
 
 
-# C2C : Unit Test For Resetting Instance Password Method
-class TestResettingInstancePassword(ACSMockServiceTestCase):
+# C2C : Unit Test For Reset Instance Password Method
+class TestResetInstancePassword(ACSMockServiceTestCase):
     connection_class = RDSConnection   
     db_instance_id = "rm-3ns9392w5ezzo2270"
-    account_name = "rohit"
-    account_password = "rohit@123"
+    account_name = "demo"
+    account_password = "demo@123"
     command = "reset_password"
 
     def default_body(self):
-        return RESETTING_INSTANCE_PASSWORD 
+        return RESET_INSTANCE_PASSWORD 
                                                                     
-    def test_resetting_instance_password(self):
+    def test_reset_instance_password(self):
         self.set_http_response(status_code=200)
-        changed, result = self.service_connection.resetting_instance_password(db_instance_id=self.db_instance_id,
-                                                                              account_name=self.account_name,
-                                                                              account_password=self.account_password)
+        changed, result = self.service_connection.reset_instance_password(db_instance_id=self.db_instance_id,
+                                                                          account_name=self.account_name,
+                                                                          account_password=self.account_password)
         self.assertEqual(result[0][u'RequestId'], "11D5681C-7090-435F-BB17-E4E19DA836F5")        
 
 
-# C2C : Unit Test For Restarting Rds Instance Method
-class TestRestartingRdsInstance(ACSMockServiceTestCase):
+# C2C : Unit Test For Restart Rds Instance Method
+class TestRestartRdsInstance(ACSMockServiceTestCase):
     connection_class = RDSConnection   
     instance_id = "rm-3ns9392w5ezzo2270"
 
     def default_body(self):
-        return RESTARTING_RDS_INSTANCE 
+        return RESTART_RDS_INSTANCE 
                                                                     
-    def test_restarting_rds_instance(self):
+    def test_restart_rds_instance(self):
         self.set_http_response(status_code=200)
-        changed, result = self.service_connection.restarting_rds_instance(instance_id=self.instance_id)
+        changed, result = self.service_connection.restart_rds_instance(instance_id=self.instance_id)
         self.assertEqual(result[0][u'RequestId'], "81DDE6C8-C10F-401F-B758-80487483AB62")        
         
 
-# C2C : Unit Test For Releasing Rds Instance Method
-class TestReleasingRdsInstance(ACSMockServiceTestCase):
+# C2C : Unit Test For Release Rds Instance Method
+class TestReleaseRdsInstance(ACSMockServiceTestCase):
     connection_class = RDSConnection   
     instance_id = "rm-3ns9392w5ezzo2270"
 
     def default_body(self):
-        return RELEASING_RDS_INSTANCE 
+        return RELEASE_RDS_INSTANCE 
                                                                     
-    def test_releasing_rds_instance(self):
+    def test_release_rds_instance(self):
         self.set_http_response(status_code=200)
-        changed, result = self.service_connection.releasing_rds_instance(instance_id=self.instance_id)
+        changed, result = self.service_connection.release_rds_instance(instance_id=self.instance_id)
         self.assertEqual(result[0][u'RequestId'], "EC72C609-238F-42C8-9CF0-C2BC21D52DD3")        
         
 
-# C2C : Unit Test For Switching between primary and standby database Method
-class TestSwitchingBetweenPrimaryAndStandbyDatabase(ACSMockServiceTestCase):
+# C2C : Unit Test For Switch between primary and standby database Method
+class TestSwitchBetweenPrimaryAndStandbyDatabase(ACSMockServiceTestCase):
     connection_class = RDSConnection   
     instance_id = "rm-3nsyw635bgr40ft6d"
     node_id = "2410959"
     force = "Yes"
 
     def default_body(self):
-        return SWITCING_BETWEEN_PRIMARY_AND_STANDBY_DATABASE
+        return SWITCH_BETWEEN_PRIMARY_AND_STANDBY_DATABASE
                                                                     
-    def test_switching_between_primary_standby_database(self):
+    def test_switch_between_primary_standby_database(self):
         self.set_http_response(status_code=200)
-        changed, result = self.service_connection.switching_between_primary_standby_database(
-            instance_id=self.instance_id, node_id=self.node_id, force=self.force)
+        changed, result = self.service_connection.switch_between_primary_standby_database(instance_id=self.instance_id,
+                                                                                          node_id=self.node_id,
+                                                                                          force=self.force)
         self.assertEqual(result[0][u'RequestId'], "B5894B87-F83A-4BA1-B83F-DADB0AB47164")
 
 
-# C2C : Unit Test For Resetting Account Method
-class TestResettingAccount(ACSMockServiceTestCase):
+# C2C : Unit Test For Reset Account Method
+class TestResetAccount(ACSMockServiceTestCase):
     connection_class = RDSConnection
     db_instance_id = "rm-dj148mev98v237v42"
-    account_name = "rohit"
-    account_password = "rohit@123"
+    account_name = "demo"
+    account_password = "demo@123"
 
     def default_body(self):
-        return RESETTING_ACCOUNT
+        return RESET_ACCOUNT
 
-    def test_resetting_account(self):
+    def test_reset_account(self):
         self.set_http_response(status_code=200)
-        changed, result = self.service_connection.resetting_account(db_instance_id=self.db_instance_id,
-                                                                    account_name=self.account_name,
-                                                                    account_password=self.account_password)
+        changed, result = self.service_connection.reset_account(db_instance_id=self.db_instance_id,
+                                                                account_name=self.account_name,
+                                                                account_password=self.account_password)
         self.assertEqual(result[0][u'RequestId'], "0F630492-7754-405A-B631-9974F54D5728")
 
 
@@ -469,40 +507,40 @@ class TestDeleteAccount(ACSMockServiceTestCase):
         self.assertEqual(result[u'RequestId'], "662D4C5A-8469-4877-A2D8-3B8241EAF9DE")    
 
 
-# C2C : Unit Test For Granting Account Permission Method
-class TestGrantingAccountPermission(ACSMockServiceTestCase):
+# C2C : Unit Test For Grant Account Permissions Method
+class TestGrantAccountPermission(ACSMockServiceTestCase):
     connection_class = RDSConnection
     db_instance_id = "rm-3nst28462da58z43g"
     account_name = "demo3"
-    db_name = "Akash_created"
+    db_name = "demo_created"
     account_privilege = "ReadOnly"
 
     def default_body(self):
-        return GRANTING_ACCOUNT_PERMISSION
+        return GRANT_ACCOUNT_PERMISSIONS
                                                                     
-    def test_granting_account_permission(self):
+    def test_grant_account_permissions(self):
         self.set_http_response(status_code=200)
-        changed, result = self.service_connection.granting_account_permission(db_instance_id=self.db_instance_id,
-                                                                              account_name=self.account_name,
-                                                                              db_name=self.db_name,
-                                                                              account_privilege=self.account_privilege)
+        changed, result = self.service_connection.grant_account_permissions(db_instance_id=self.db_instance_id,
+                                                                            account_name=self.account_name,
+                                                                            db_name=self.db_name,
+                                                                            account_privilege=self.account_privilege)
         self.assertEqual(result[u'RequestId'], "4F479108-6C86-4AA0-BB88-9982A697C8DE")    
 
 
-# C2C : Unit Test For Revoking Account Permission Method
+# C2C : Unit Test For Revoke Account Permissions Method
 class TestRevokingAccountPermission(ACSMockServiceTestCase):
     connection_class = RDSConnection
     db_instance_id = "rm-3nst28462da58z43g"
     account_name = "demo3"
-    db_name = "Akash_created"
+    db_name = "demo_created"
 
     def default_body(self):
-        return REVOKING_ACCOUNT_PERMISSION
+        return REVOKE_ACCOUNT_PERMISSIONS
                                                                     
-    def test_revoking_account_permission(self):
+    def test_revoke_account_permissions(self):
         self.set_http_response(status_code=200)
-        changed, result = self.service_connection.revoking_account_permission(db_instance_id=self.db_instance_id,
-                                                                              account_name=self.account_name,
-                                                                              db_name=self.db_name)
+        changed, result = self.service_connection.revoke_account_permissions(db_instance_id=self.db_instance_id,
+                                                                             account_name=self.account_name,
+                                                                             db_name=self.db_name)
         self.assertEqual(result[u'RequestId'], "7EA5AEA2-869F-44CB-A5C3-401F9C03D81A")    
 

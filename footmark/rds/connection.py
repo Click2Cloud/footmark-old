@@ -39,11 +39,11 @@ class RDSConnection(ACSQueryConnection):
                                             acs_secret_access_key,
                                             self.region, self.RDSSDK, security_token)
 
-    def create_rds_instance(self, zone, db_engine, engine_version, db_instance_class, db_instance_storage,
-                            instance_net_type, instance_description=None, security_ip_list=None, pay_type=None,
-                            period=None, used_time=None, instance_network_type=None, connection_mode=None, vpc_id=None,
-                            vswitch_id=None, private_ip_address=None, allocate_public_ip=False,
-                            public_connection_string_prefix=None, public_port=None, db_name=None, db_description=None,
+    def create_rds_instance(self, db_engine, engine_version, db_instance_class, db_instance_storage,
+                            instance_net_type, security_ip_list, pay_type, period=None,zone=None,
+                            instance_description=None, used_time=None, instance_network_type=None, connection_mode=None,
+                            vpc_id=None, vswitch_id=None, private_ip_address=None, allocate_public_ip=False,
+                            connection_string_prefix=None, public_port=None, db_name=None, db_description=None,
                             character_set_name=None, maint_window=None, preferred_backup_time=None,
                             preferred_backup_period=None, backup_retention_period=None, db_tags=None, wait=None,
                             wait_timeout=None):
@@ -85,7 +85,7 @@ class RDSConnection(ACSQueryConnection):
          :type allocate_public_ip: string
          :param allocate_public_ip: Whether to allocate public IP
          :type public_connection_string_prefix: string
-         :param public_connection_string_prefix: Prefix of an Internet connection string
+         :param connection_string_prefix: Prefix of an Internet connection string
          :type public_port: integer
          :param public_port: The public connection port.
          :type db_name: string
@@ -181,16 +181,16 @@ class RDSConnection(ACSQueryConnection):
             # Start newly created Instance
             # wait until instance status becomes running         
             if allocate_public_ip and self.check_instance_status(results_instance[u'DBInstanceId']):
-                if public_connection_string_prefix and public_port:
+                if connection_string_prefix and public_port:
                     if instance_net_type == "Intranet":
                         changed_conn_str, result_conn_str = \
                             self.create_instance_public_connection_string(results_instance[u'DBInstanceId'],
-                                                                          public_connection_string_prefix, public_port)
+                                                                          connection_string_prefix, public_port)
                     elif instance_net_type == "Internet":
                         changed_conn_str, result_conn_str = \
                             self.modify_instance_public_connection(results_instance[u'DBInstanceId'], 
                                                                    results_instance[u'ConnectionString'],
-                                                                   public_connection_string_prefix, public_port)
+                                                                   connection_string_prefix, public_port)
             
                     if 'error' in (''.join(str(result_conn_str))).lower():
                         results.append(result_conn_str)
@@ -206,7 +206,7 @@ class RDSConnection(ACSQueryConnection):
               
             if maint_window and self.check_instance_status(results_instance[u'DBInstanceId']):
                 changed_maint_window, result_maint_window = \
-                    self.modifying_db_instance_maint_time(results_instance[u'DBInstanceId']
+                    self.modify_db_instance_maint_time(results_instance[u'DBInstanceId']
                                                             , maint_window)
                 if 'error' in (''.join(str(result_maint_window))).lower():
                     results.append(result_maint_window) 
@@ -214,14 +214,14 @@ class RDSConnection(ACSQueryConnection):
             if preferred_backup_time and preferred_backup_period:               
                 if self.check_instance_status(results_instance[u'DBInstanceId']):
                     changed_backup_policy, result_backup_policy = \
-                        self.modifying_backup_policy(results_instance[u'DBInstanceId'],
-                                                     preferred_backup_time, preferred_backup_period,
-                                                     backup_retention_period)
+                        self.modify_backup_policy(results_instance[u'DBInstanceId'],
+                                                  preferred_backup_time, preferred_backup_period,
+                                                  backup_retention_period)
                     if 'error' in (''.join(str(result_backup_policy))).lower():
                         results.append(result_backup_policy) 
                
             if db_tags:
-                changed_tags, result_db_tags = self.binding_tags(results_instance[u'DBInstanceId'], db_tags) 
+                changed_tags, result_db_tags = self.bind_tags(results_instance[u'DBInstanceId'], db_tags) 
                 if 'error' in (''.join(str(result_db_tags))).lower():
                     results.append(result_db_tags)                                    
 
@@ -389,8 +389,8 @@ class RDSConnection(ACSQueryConnection):
                     instance_status = "Stopped" 
             if perform_flag:    
                 if self.check_instance_status(instance_id):
-                    changed_inst_type, result_inst_type = self.changing_rds_instance_type(instance_id, db_instance_class,
-                                                                                          db_instance_storage, pay_type)
+                    changed_inst_type, result_inst_type = self.change_rds_instance_type(instance_id, db_instance_class,
+                                                                                        db_instance_storage, pay_type)
                     if result_inst_type:
                         results.append(result_inst_type)
                     
@@ -410,8 +410,8 @@ class RDSConnection(ACSQueryConnection):
                 if preferred_backup_time and preferred_backup_period:
                     if self.check_instance_status(instance_id):        
                         changed_backup_policy, result_backup_policy = \
-                            self.modifying_backup_policy(instance_id, preferred_backup_time, preferred_backup_period,
-                                                         backup_retention_period)
+                            self.modify_backup_policy(instance_id, preferred_backup_time, preferred_backup_period,
+                                                      backup_retention_period)
                         if 'error' in (''.join(str(result_backup_policy))).lower():
                             results.append(result_backup_policy)
                         else:
@@ -419,8 +419,8 @@ class RDSConnection(ACSQueryConnection):
                                              
                 if maint_window:
                     if self.check_instance_status(instance_id):     
-                        changed_maint_time, result_maint_time = self.modifying_db_instance_maint_time(instance_id,
-                                                                                                      maint_window)
+                        changed_maint_time, result_maint_time = self.modify_db_instance_maint_time(instance_id,
+                                                                                                   maint_window)
                         if 'error' in (''.join(str(result_maint_time))).lower():
                             results.append(result_maint_time)
                         else:
@@ -446,7 +446,7 @@ class RDSConnection(ACSQueryConnection):
                             changed = True           
                               
                 if current_connection_string:    
-                    if self.check_instance_status(instance_id):                          
+                    if self.check_instance_status(instance_id) and connection_string_prefix and port:                          
                         changed_public_conn, result_public_conn = \
                             self.modify_instance_public_connection(instance_id, current_connection_string,
                                                                    connection_string_prefix, port)
@@ -460,7 +460,7 @@ class RDSConnection(ACSQueryConnection):
                 if instance_network_type and self.check_instance_status(instance_id):   
                     changed_net_type, result_net_type = self.modify_rds_instance_network_type(instance_id,
                                                                                               instance_network_type,
-                                                                                              vpc_id , vswitch_id)
+                                                                                              vpc_id, vswitch_id)
                     if 'error' in (''.join(str(result_net_type))).lower():
                         results.append(result_net_type)                        
                     else:
@@ -497,9 +497,9 @@ class RDSConnection(ACSQueryConnection):
                 instance_status = "Stopped"           
         return status_flag
 
-    def changing_rds_instance_type(self, instance_id, db_instance_class, db_instance_storage, pay_type):
+    def change_rds_instance_type(self, instance_id, db_instance_class, db_instance_storage, pay_type):
         """
-        Changing RDS Instance Type
+        Change RDS Instance Type
 
         :type instance_id: string
         :param instance_id: Id of instances to change
@@ -810,7 +810,7 @@ class RDSConnection(ACSQueryConnection):
 
         return changed, results
 
-    def modifying_db_instance_maint_time(self, instance_id, maint_window):
+    def modify_db_instance_maint_time(self, instance_id, maint_window):
         """
         Modify Instance Maintenance Time
         :type instance_id: string
@@ -846,10 +846,10 @@ class RDSConnection(ACSQueryConnection):
 
         return changed, results
 
-    def modifying_backup_policy(self, instance_id, preferred_backup_time, preferred_backup_period,
-                                backup_retention_period, backup_log=None):
+    def modify_backup_policy(self, instance_id, preferred_backup_time, preferred_backup_period,
+                             backup_retention_period, backup_log=None):
         """
-        Modifying Backup Policy
+        Modify Backup Policy
 
         :type instance_id: string
         :param instance_id: Id of instances to change
@@ -896,16 +896,16 @@ class RDSConnection(ACSQueryConnection):
 
         return changed, results
 
-    def binding_tags(self, instance_id, db_tags):
+    def bind_tags(self, instance_id, db_tags):
         """
-        Binding Tags to Instance
+        Bind Tags to Instance
 
         :type instance_id: string
         :param instance_id: Id of instances to change
         :type instance_id: dict
         :param db_tags: A dictionaries of db tags
         :return:
-            changed: If binding_tags added to instance successfully.The changed para will
+            changed: If tags binded to instance successfully.The changed para will
              be set to True else False
             result: detailed server response
         """
@@ -983,7 +983,7 @@ class RDSConnection(ACSQueryConnection):
         :type instance_id: str
         :param instance_id: Id of instances
         :type db_name: str
-        :param db_name: Name of a database to create within the instance.  If not specified, then no database is created
+        :param db_name: Name of a database to delete within the instance. If not specified, then no database is deleted
         :return: Result dict of operation
         """
         params = {}
@@ -1063,9 +1063,9 @@ class RDSConnection(ACSQueryConnection):
 
         return changed, results
 
-    def resetting_instance_password(self, db_instance_id, account_name, account_password):
+    def reset_instance_password(self, db_instance_id, account_name, account_password):
         """
-        Resetting instance password
+        Reset instance password
         :type db_instance_id: str
         :param db_instance_id: Id of instance
         :type account_name: str
@@ -1103,9 +1103,9 @@ class RDSConnection(ACSQueryConnection):
 
         return changed, results
 
-    def restarting_rds_instance(self, instance_id):
+    def restart_rds_instance(self, instance_id):
         """
-        Restarting rds instance
+        Restart rds instance
         :type instance_id: str
         :param instance_id: Id of instances to reboot
         :return: Result dict of operation
@@ -1133,9 +1133,9 @@ class RDSConnection(ACSQueryConnection):
 
         return changed, results
 
-    def releasing_rds_instance(self, instance_id):
+    def release_rds_instance(self, instance_id):
         """
-        Releasing rds instance
+        Release rds instance
         :type instance_id: str
         :param instance_id: Id of instances to remove
         :return: Result dict of operation
@@ -1190,18 +1190,18 @@ class RDSConnection(ACSQueryConnection):
                   
         return changed, results
 
-    def granting_account_permission(self, db_instance_id, account_name, db_name, account_privilege):
+    def grant_account_permissions(self, db_instance_id, account_name, db_name, account_privilege):
         """
-        Grating Account Permission
+        Grant Account Permissions
 
         :type db_instance_id: str
         :param db_instance_id: Id of instance
         :type account_name: str
         :param account_name: Name of an account
         :type db_name: str
-        :param db_name: Name of a database to create within the instance.
+        :param db_name: Name of a database.
         :type account_privilege: str
-        :param account_privilege: Account permission
+        :param account_privilege: Account permissions
         :return: Result dict of operation
         """
         params = {}
@@ -1230,16 +1230,16 @@ class RDSConnection(ACSQueryConnection):
 
         return changed, results
 
-    def revoking_account_permission(self, db_instance_id, account_name, db_name):
+    def revoke_account_permissions(self, db_instance_id, account_name, db_name):
         """
-        Revoking Account Permission
+        Revoke Account Permissions
 
         :type db_instance_id: str
         :param db_instance_id: Id of instance
         :type account_name: str
         :param account_name: Name of an account
         :type db_name: str
-        :param db_name: Name of a database to create within the instance.
+        :param db_name: Name of a database.
         :return: Result dict of operation
         """
         params = {}
@@ -1266,9 +1266,9 @@ class RDSConnection(ACSQueryConnection):
 
         return changed, results
 
-    def switching_between_primary_standby_database(self, instance_id, node_id, force):
+    def switch_between_primary_standby_database(self, instance_id, node_id, force):
         """
-        Switching between primary and standby databases in rds instance
+        Switch between primary and standby databases in rds instance
         :type instance_id: str
         :param instance_id: Id of instances to modify
         :type node_id: str
@@ -1313,16 +1313,15 @@ class RDSConnection(ACSQueryConnection):
 
         return changed, results
 
-    def resetting_account(self, db_instance_id, account_name, account_password):
+    def reset_account(self, db_instance_id, account_name, account_password):
         """
-        Resetting account
+        Reset account
         :type db_instance_id: str
         :param db_instance_id: Id of instance
         :type account_name: str
         :param account_name: Name of an account
         :type account_password: str
-        :param account_password: A new password. It may consist of letters, numbers, or underlines,
-        with a length of 6 to 32 characters
+        :param account_password: Account password.
         :return: Result dict of operation
         """
         params = {}
