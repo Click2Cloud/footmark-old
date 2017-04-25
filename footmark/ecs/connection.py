@@ -263,7 +263,7 @@ class ECSConnection(ACSQueryConnection):
         if filters:
             self.build_filter_params(params, filters)
         return self.get_list('DescribeDisks', params, ['Disks', Disk])
-    
+
     def get_security_status(self, vpc_id=None, group_ids=None):
         """
         Querying Security Group List returns the basic information about all
@@ -287,7 +287,7 @@ class ECSConnection(ACSQueryConnection):
         if vpc_id:
             self.build_list_params(params, vpc_id, 'VpcId')
         if group_ids:
-            self.build_list_params(params, group_ids, 'SecurityGroupIds')        
+            self.build_list_params(params, group_ids, 'SecurityGroupIds')
 
         try:
             results = self.get_status('DescribeSecurityGroups', params)
@@ -536,7 +536,7 @@ class ECSConnection(ACSQueryConnection):
                     if 'tag_key' and 'tag_value' in instance_tag:
                         if (instance_tag['tag_key'] is not None) and (instance_tag['tag_value'] is not None):
                             self.build_list_params(params, instance_tag[
-                                'tag_key'], 'Tag' + str(tag_no) + 'Key')                       
+                                'tag_key'], 'Tag' + str(tag_no) + 'Key')
                             self.build_list_params(params, instance_tag[
                                 'tag_value'], 'Tag' + str(tag_no) + 'Value')
                             tag_no += 1
@@ -615,7 +615,6 @@ class ECSConnection(ACSQueryConnection):
         """
         results = []
         changed = False
-        
         if attributes:
             for attribute in attributes:
                 if attribute:
@@ -702,8 +701,8 @@ class ECSConnection(ACSQueryConnection):
             return changed, results
 
         instance_count = len(instance_ids)
-        success_instance_ids=[]
-        failed_instance_ids=[]
+        success_instance_ids = []
+        failed_instance_ids = []
 
         for counter in range(0, instance_count):
             id_of_instance = instance_ids[counter]
@@ -724,7 +723,7 @@ class ECSConnection(ACSQueryConnection):
                 self.verify_join_remove_securitygrp(id_of_instance, group_id, 'join')                
                 success_instance_ids.append(id_of_instance)
                 changed = True
-                    
+
             except Exception as ex:
                 error_code = ex.error_code
                 failed_instance_ids.append(id_of_instance)
@@ -735,7 +734,7 @@ class ECSConnection(ACSQueryConnection):
                 results.append("Error Code: " + error_code)
                 results.append("Error Message: " + ex.message)
 
-        return changed, results, success_instance_ids, failed_instance_ids     
+        return changed, results, success_instance_ids, failed_instance_ids
 
     def leave_security_group(self, instance_ids, group_id):
         """
@@ -751,7 +750,7 @@ class ECSConnection(ACSQueryConnection):
         """
         params = {}
         results = []
-        
+
         if not isinstance(instance_ids,list):
             changed = False
             results.append("Error Code: " + "Invalid DataType")
@@ -760,7 +759,7 @@ class ECSConnection(ACSQueryConnection):
 
         instance_count = len(instance_ids)
         changed = False
-        
+
         success_instance_ids=[]
         failed_instance_ids=[]
 
@@ -780,7 +779,7 @@ class ECSConnection(ACSQueryConnection):
                     id_of_instance) + " from security group " + str(group_id))
 
                 # Verifying whether operation got performed successfully
-                self.verify_join_remove_securitygrp(id_of_instance, group_id, 'remove')                
+                self.verify_join_remove_securitygrp(id_of_instance, group_id, 'remove')
                 success_instance_ids.append(id_of_instance)
                 changed = True
 
@@ -992,7 +991,7 @@ class ECSConnection(ACSQueryConnection):
                         self.build_list_params(params, rule['cidr_ip'], api_cidr_ip_param_name.get(rule_type))
 
                     if 'group_owner_id' in rule:
-                        self.build_list_params(params, rule['group_owner_id'], 
+                        self.build_list_params(params, rule['group_owner_id'],
                                                api_group_owner_param_name.get(rule_type))
 
                     if 'policy' in rule:
@@ -1066,7 +1065,7 @@ class ECSConnection(ACSQueryConnection):
         return changed, results
 
     def create_disk(self, zone_id, disk_name=None, description=None,
-                    disk_category=None, size=None, disk_tags=None, 
+                    disk_category=None, size=None, disk_tags=None,
                     snapshot_id=None):
         """
         create an disk in ecs
@@ -1131,7 +1130,7 @@ class ECSConnection(ACSQueryConnection):
 
         # Size of Disk
         if size:
-            self.build_list_params(params, size, 'Size')        
+            self.build_list_params(params, size, 'Size')
 
         # Disk Tags
         tag_no = 1
@@ -1141,10 +1140,10 @@ class ECSConnection(ACSQueryConnection):
                     if 'tag_key' and 'tag_value' in disk_tag:
                         if (disk_tag['tag_key'] is not None) and (disk_tag['tag_value'] is not None):
                             self.build_list_params(params, disk_tag[
-                                'tag_key'], 'Tag' + str(tag_no) + 'Key')                       
+                                'tag_key'], 'Tag' + str(tag_no) + 'Key')
                             self.build_list_params(params, disk_tag[
                                 'tag_value'], 'Tag' + str(tag_no) + 'Value')
-                            tag_no += 1                        
+                            tag_no += 1
 
         # Snapshot Id
         if snapshot_id:
@@ -1155,11 +1154,11 @@ class ECSConnection(ACSQueryConnection):
             disk_id = response['DiskId']
             results.append("Disk Creation Successful")
             changed = True
-        except Exception as ex:            
+        except Exception as ex:
             error_code = ex.error_code
             error_msg = ex.message
-            results.append({"Error Code": error_code, "Error Message": error_msg})      
-            
+            results.append({"Error Code": error_code, "Error Message": error_msg})
+
         return changed, disk_id, results
 
     def attach_disk(self, disk_id, instance_id, device=None, delete_with_instance=None):
@@ -1197,11 +1196,11 @@ class ECSConnection(ACSQueryConnection):
                 error_code = "IncorrectDiskStatus"
                 error_msg = " The disk " + disk_id + " is in_use.It is attached to instance " + disk_instance_id
                 results.append({"Error Code :": error_code, "Error Message :": error_msg})
-                return changed, results   
+                return changed, results
         else:
             if 'error code' in str(result_instance).lower():
                 results = result_instance
-                return changed, results 
+                return changed, results
 
         # Instance Id, which is to be added to a security group
         self.build_list_params(params, id_of_instance, 'InstanceId')
@@ -1223,7 +1222,7 @@ class ECSConnection(ACSQueryConnection):
                 delete_with_instance = str(delete_with_instance).lower().strip()
 
             self.build_list_params(params, delete_with_instance, 'DeleteWithInstance')
-       
+
         # Method Call, to perform adding action
         try:
             obtained_result = self.get_status('AttachDisk', params)
@@ -1252,7 +1251,7 @@ class ECSConnection(ACSQueryConnection):
 
         # region retrieve InstanceId from DiskId
         instance_id, disk_status, result_instance = self.retrieve_instance_for_disk(disk_id)
-        
+
         if disk_status:
             if result_instance:
                 if 'error code' in str(result_instance).lower():
@@ -1330,7 +1329,7 @@ class ECSConnection(ACSQueryConnection):
             results.append({"Error Code": error_code, "Error Message": error_msg})
 
         return instance_id, disk_status, results
-    
+
     def delete_disk(self, disk_id):
         """
         Method to delete a disk
@@ -1414,8 +1413,8 @@ class ECSConnection(ACSQueryConnection):
         # the snapshot id for creating image
         if snapshot_id:
             # Verifying progress of snapshot_id, snapshot_id should be 100% completed
-            snapshot_results, snapshot_progress ,snapshot_changed = self.get_snapshot_image(snapshot_id)
-        
+            snapshot_results, snapshot_progress, snapshot_changed = self.get_snapshot_image(snapshot_id)
+
             if snapshot_results:
                 if 'error code' in str(snapshot_results).lower():
                     results = snapshot_results
@@ -1424,7 +1423,7 @@ class ECSConnection(ACSQueryConnection):
             if not snapshot_changed:
                 results.append({"Error Code": "Snapshot.NotReady", "Error Message": "snapshot is not ready"})
                 return changed, image_id, results, request_id
-       
+
         if snapshot_id:
             self.build_list_params(params, snapshot_id, 'SnapshotId')
 
@@ -1439,7 +1438,7 @@ class ECSConnection(ACSQueryConnection):
         # set the description
         if description:
             self.build_list_params(params, description, 'Description')
-                    
+
         # specify the instance id
         if instance_id:
             self.build_list_params(params, instance_id, 'InstanceId')
@@ -1458,7 +1457,7 @@ class ECSConnection(ACSQueryConnection):
                     if 'snapshot_id' in mapping:
                         self.build_list_params(params, mapping[
                             'snapshot_id'], 'DiskDeviceMapping.' + str(mapping_no) + '.SnapshotId')
-                        snapshot_map_results, snapshot_map_progress ,snapshot_map_changed \
+                        snapshot_map_results, snapshot_map_progress, snapshot_map_changed \
                             = self.get_snapshot_image(mapping['snapshot_id'])
                         if snapshot_map_results:
                             if 'error code' in str(snapshot_map_results).lower():
@@ -1592,7 +1591,7 @@ class ECSConnection(ACSQueryConnection):
                             results.append(response)
                             changed = True 
                 else:
-                    results.append({"Error Code": "Image does not exist", "Error Message": "Image does not exist"})          
+                    results.append({"Error Code": "Image does not exist", "Error Message": "Image does not exist"})
         except Exception as ex:
             error_code = ex.error_code
             error_msg = ex.message
@@ -1659,7 +1658,6 @@ class ECSConnection(ACSQueryConnection):
     def retry(ExceptionToCheck, tries=10, delay=30, backoff=2, logger=None):
 
         def deco_retry(f):
-
             @wraps(f)
             def f_retry(*args, **kwargs):
                 mtries, mdelay = tries, delay
@@ -1701,14 +1699,14 @@ class ECSConnection(ACSQueryConnection):
     def verify_join_remove_securitygrp(self, instance_id, group_id, mode):
         """
         To verify join & remove operations got performed in security group
-        """        
+        """
         done = False
         count = 0
         id_of_instance = [instance_id]
         try:
             while done != True:
                 time.sleep(5)
-                instance_list = self.get_all_instances(id_of_instance, None, None)            
+                instance_list = self.get_all_instances(id_of_instance, None, None)
                 if len(instance_list) > 0:
                     if mode.lower() == 'join':
                         for inst in instance_list:
@@ -1728,9 +1726,4 @@ class ECSConnection(ACSQueryConnection):
         except Exception as ex:
             raise Exception
 
-        return done 
-
-    
-    
-
-    
+        return done
